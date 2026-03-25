@@ -50,7 +50,7 @@ const RootRedirect = () => {
   }
 
   if (user.role === ROLES.ADMIN) {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to="/admin/dashboard" replace />;
   }
 
   // Default to customer dashboard for all other authenticated users (prevents loop with /login)
