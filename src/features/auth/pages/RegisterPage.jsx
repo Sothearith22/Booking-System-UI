@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../../hooks/useAuth';
 import Alert from '../../../components/ui/alert/Alert';
-import Button from '../../../components/ui/button/Button';
+import Button from '../../../components/ui/Button';
 
 const RegisterPage = () => {
   const [formData, setFormData] = useState({

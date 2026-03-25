@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import Button from '../../../components/ui/button/Button';
+import Button from '../../../components/ui/Button';
 import {
   Search,
   Star,

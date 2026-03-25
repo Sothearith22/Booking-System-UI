@@ -27,7 +27,13 @@ const ServiceAvailabilityPage = lazy(() => import('../features/admin/pages/Servi
 const CustomerDashboard = lazy(() => import('../features/customer/pages/Dashboard'));
 const RoomPage = lazy(() => import('../features/customer/pages/RoomPage'));
 const HotelDetails = lazy(() => import('../features/customer/pages/HotelDetails'));
-const RoomService = lazy(() => import('../features/customer/pages/RoomService'));
+const ProductService = lazy(() => import('../features/customer/pages/ProductService'));
+const MyBookings = lazy(() => import('../features/customer/pages/MyBookings'));
+
+const CheckoutPage = lazy(() => import('../features/customer/pages/Checkout'));
+const SupportPage = lazy(() => import('../features/customer/pages/Support'));
+const ConfirmationPage = lazy(() => import('../features/customer/pages/Confirmation'));
+const ExploreCategoriesPage = lazy(() => import('../features/customer/pages/ExploreCategories'));
 const NotFound = lazy(() => import('../features/common/pages/NotFound'));
 
 /**
@@ -99,8 +105,12 @@ const AppRoutes = () => {
             <Route index element={<CustomerDashboard />} />
             <Route path="rooms" element={<RoomPage />} />
             <Route path="hotels/:id" element={<HotelDetails />} />
-            <Route path="room-service" element={<RoomService />} />
-            <Route path="bookings" element={<div className="p-6 text-gray-800 bg-white rounded-xl shadow-sm">My Bookings (Coming Soon)</div>} />
+            <Route path="product-service" element={<ProductService />} />
+            <Route path="bookings" element={<MyBookings />} />
+            <Route path="checkout" element={<CheckoutPage />} />
+            <Route path="support" element={<SupportPage />} />
+            <Route path="confirmation" element={<ConfirmationPage />} />
+            <Route path="explore" element={<ExploreCategoriesPage />} />
           </Route>
         </Route>
 

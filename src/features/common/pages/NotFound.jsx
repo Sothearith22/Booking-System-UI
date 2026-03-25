@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Home, ArrowLeft, Search, HelpCircle } from 'lucide-react';
-import Button from '../../../components/ui/button/Button';
+import Button from '../../../components/ui/Button';
 
 const NotFound = () => {
   const navigate = useNavigate();

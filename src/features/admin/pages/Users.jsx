@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { adminService } from '../api/admin.service';
-import Button from '../../../components/ui/button/Button';
-import Modal from '../../../components/ui/modal/Modal';
+import Button from '../../../components/ui/Button';
+import Modal from '../../../components/ui/Modal';
 import {
   Loader2,
   Search,
@@ -64,6 +64,8 @@ const StatCard = ({ label, value, subtitle, subtitleColor }) => (
 
 const ROWS_PER_PAGE = 5;
 
+import DeleteConfirmationModal from '../../../components/ui/DeleteConfirmationModal';
+
 const UsersPage = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -72,6 +74,7 @@ const UsersPage = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState(null);
   const [newUser, setNewUser] = useState({ name: '', email: '', role: 'staff', department: '' });
 
   useEffect(() => {
@@ -113,9 +116,10 @@ const UsersPage = () => {
 
   useEffect(() => { setCurrentPage(1); }, [searchTerm, roleFilter, statusFilter]);
 
-  const handleDelete = (id) => {
-    if (window.confirm('Are you sure you want to remove this user?')) {
-      setUsers(prev => prev.filter(u => u.id !== id));
+  const handleDeleteConfirm = () => {
+    if (userToDelete) {
+      setUsers(prev => prev.filter(u => u.id !== userToDelete.id));
+      setUserToDelete(null);
     }
   };
 
@@ -265,7 +269,7 @@ const UsersPage = () => {
                           <button className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all" title="Edit">
                             <Edit size={16} />
                           </button>
-                          <button onClick={() => handleDelete(user.id)} className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all" title="Delete">
+                          <button onClick={() => setUserToDelete(user)} className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all" title="Delete">
                             <Trash2 size={16} />
                           </button>
                         </div>
@@ -339,6 +343,15 @@ const UsersPage = () => {
           </div>
         </form>
       </Modal>
+
+      <DeleteConfirmationModal
+        isOpen={!!userToDelete}
+        onClose={() => setUserToDelete(null)}
+        onConfirm={handleDeleteConfirm}
+        title="Remove User?"
+        message="Are you sure you want to revoke access and remove this user account?"
+        itemName={userToDelete?.name}
+      />
     </div>
   );
 };

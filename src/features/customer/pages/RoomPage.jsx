@@ -1,15 +1,24 @@
 import React, { useState, useMemo } from 'react';
 import { Search, ChevronDown } from 'lucide-react';
-import FilterSidebar from '../../../components/ui/sidebar/FilterSidebar';
-import RoomCard from '../../../components/ui/card/RoomCard';
+import FilterSidebar from '../components/FilterSidebar';
+import RoomCard from '../components/RoomCard';
 import { MOCK_ROOMS } from '../../../data/mock';
 
 const RoomPage = () => {
   const [maxPrice, setMaxPrice] = useState(1000);
+  const [selectedAmenities, setSelectedAmenities] = useState([]);
+  const [selectedRating, setSelectedRating] = useState(null);
 
   const filteredRooms = useMemo(() => {
-    return MOCK_ROOMS.filter(room => room.price_per_night <= maxPrice);
-  }, [maxPrice]);
+    return MOCK_ROOMS.filter(room => {
+      const matchesPrice = room.price_per_night <= maxPrice;
+      const matchesRating = !selectedRating || Math.floor(room.rating) === selectedRating;
+      const matchesAmenities = selectedAmenities.length === 0 || 
+        selectedAmenities.every(amenity => room.amenities.includes(amenity));
+
+      return matchesPrice && matchesRating && matchesAmenities;
+    });
+  }, [maxPrice, selectedAmenities, selectedRating]);
 
   return (
     <div className="pb-20 bg-gray-50 min-h-screen">
@@ -19,7 +28,14 @@ const RoomPage = () => {
         <div className="flex flex-col lg:flex-row gap-10">
           
           {/* 3. Sidebar Filters */}
-          <FilterSidebar maxPrice={maxPrice} onPriceChange={setMaxPrice} />
+          <FilterSidebar 
+            maxPrice={maxPrice} 
+            onPriceChange={setMaxPrice}
+            selectedAmenities={selectedAmenities}
+            onAmenitiesChange={setSelectedAmenities}
+            selectedRating={selectedRating}
+            onRatingChange={setSelectedRating}
+          />
 
           {/* 4. Results Area */}
           <div className="flex-1">
