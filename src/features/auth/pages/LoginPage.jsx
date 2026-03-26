@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../../../hooks/useAuth';
-import Alert from '../../../components/ui/alert/Alert';
+import Alert from '../../../components/ui/Alert';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -97,7 +97,7 @@ const LoginPage = () => {
       </form>
       
       <p className="text-center text-sm text-gray-500">
-        Don't have an account? <a href="/register" className="text-blue-600 font-semibold">Register</a>
+        Don't have an account? <Link to="/register" className="text-blue-600 font-semibold">Register</Link>
       </p>
 
     </div>

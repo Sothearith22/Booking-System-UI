@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { MapPin, Star, Wifi, User, Check, Loader2, Calendar } from 'lucide-react';
-import Alert from '../../../components/ui/alert/Alert';
+import Alert from '../../../components/ui/Alert';
 import Button from '../../../components/ui/Button';
 
 // ─────────────────────────────────────────────────────────────────────────────

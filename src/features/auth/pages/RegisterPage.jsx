@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../../hooks/useAuth';
-import Alert from '../../../components/ui/alert/Alert';
+import Alert from '../../../components/ui/Alert';
 import Button from '../../../components/ui/Button';
 
 const RegisterPage = () => {
