@@ -81,10 +81,13 @@ const Toggle = ({ active, onChange }) => (
 
 // ── Main Page ────────────────────────────────────────────────────
 
+const ROWS_PER_PAGE = 6;
+
 const ServiceAvailability = () => {
   const [services, setServices] = useState(MOCK_SERVICES);
   const [activeTab, setActiveTab] = useState('All Services');
   const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
 
   const filteredServices = useMemo(() => {
     return services.filter(s => {
@@ -93,6 +96,13 @@ const ServiceAvailability = () => {
       return matchesTab && matchesSearch;
     });
   }, [services, activeTab, searchTerm]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredServices.length / ROWS_PER_PAGE));
+  const pagedServices = filteredServices.slice((currentPage - 1) * ROWS_PER_PAGE, currentPage * ROWS_PER_PAGE);
+
+  // Reset to page 1 when filters change
+  const handleTabChange = (tab) => { setActiveTab(tab); setCurrentPage(1); };
+  const handleSearch = (e) => { setSearchTerm(e.target.value); setCurrentPage(1); };
 
   const handleToggle = (id) => {
     setServices(prev => prev.map(s => s.id === id ? { ...s, active: !s.active } : s));
@@ -130,7 +140,7 @@ const ServiceAvailability = () => {
           placeholder="Search services..."
           className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all"
           value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
+          onChange={handleSearch}
         />
       </div>
 
@@ -168,7 +178,7 @@ const ServiceAvailability = () => {
         {CATEGORIES.map(cat => (
           <button
             key={cat}
-            onClick={() => setActiveTab(cat)}
+            onClick={() => handleTabChange(cat)}
             className={`px-4 py-2 rounded-full text-xs font-bold transition-all border ${
               activeTab === cat
                 ? 'bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-500/20'
@@ -195,7 +205,7 @@ const ServiceAvailability = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              {filteredServices.map(service => {
+              {pagedServices.map(service => {
                 const sc = STATUS_CONFIG[service.status] || STATUS_CONFIG.available;
                 return (
                   <tr key={service.id} className="group hover:bg-blue-50/20 transition-colors">
@@ -236,10 +246,10 @@ const ServiceAvailability = () => {
         
         {/* Footer info (matches screenshot style) */}
         <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
-          <p className="text-xs text-gray-500">Showing <span className="font-bold text-gray-900">{filteredServices.length}</span> of {services.length} services</p>
+          <p className="text-xs text-gray-500">Showing <span className="font-bold text-gray-900">{Math.min((currentPage - 1) * ROWS_PER_PAGE + 1, filteredServices.length)}–{Math.min(currentPage * ROWS_PER_PAGE, filteredServices.length)}</span> of {filteredServices.length} services</p>
           <div className="flex gap-2">
-            <button className="px-3 py-1 bg-white border border-gray-200 rounded text-xs font-bold text-gray-600 hover:bg-gray-50">Previous</button>
-            <button className="px-3 py-1 bg-blue-600 border border-blue-600 rounded text-xs font-bold text-white shadow-sm hover:bg-blue-700">Next</button>
+            <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="px-3 py-1 bg-white border border-gray-200 rounded text-xs font-bold text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed">Previous</button>
+            <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="px-3 py-1 bg-blue-600 border border-blue-600 rounded text-xs font-bold text-white shadow-sm hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed">Next</button>
           </div>
         </div>
       </div>

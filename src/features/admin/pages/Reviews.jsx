@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import Button from '../../../components/ui/Button';
+import DeleteConfirmationModal from '../../../components/ui/DeleteConfirmationModal';
 import {
   Search,
   Star,
@@ -168,6 +169,7 @@ const ReviewsPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
+  const [reviewToDelete, setReviewToDelete] = useState(null);
 
   // Stats
   const stats = useMemo(() => {
@@ -221,8 +223,14 @@ const ReviewsPage = () => {
   };
 
   const handleDelete = (id) => {
-    if (window.confirm('Delete this review?')) {
-      setReviews((prev) => prev.filter((r) => r.id !== id));
+    const review = reviews.find(r => r.id === id);
+    setReviewToDelete(review);
+  };
+
+  const handleDeleteConfirm = () => {
+    if (reviewToDelete) {
+      setReviews((prev) => prev.filter((r) => r.id !== reviewToDelete.id));
+      setReviewToDelete(null);
     }
   };
 
@@ -488,6 +496,15 @@ const ReviewsPage = () => {
           </div>
         </div>
       )}
+
+      <DeleteConfirmationModal
+        isOpen={!!reviewToDelete}
+        onClose={() => setReviewToDelete(null)}
+        onConfirm={handleDeleteConfirm}
+        title="Delete Review?"
+        message="Are you sure you want to permanently delete this guest review?"
+        itemName={reviewToDelete?.guest_name}
+      />
     </div>
   );
 };

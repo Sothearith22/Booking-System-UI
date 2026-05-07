@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { adminService } from '../api/admin.service';
+import { adminService, v1Service } from '../../../services/api';
 import {
   Loader2,
   Users,
@@ -66,15 +66,15 @@ const Dashboard = () => {
   const fetchDashboardData = async () => {
     setLoading(true);
     try {
-      const [roomsJson, bookingsJson, usersJson] = await Promise.all([
-        adminService.getRooms(),
-        adminService.getBookings(),
+      const [roomsRes, bookingsRes, usersRes] = await Promise.all([
+        v1Service.getRooms(),
+        v1Service.getAllBookings(),
         adminService.getUsers(),
       ]);
-      setData({ 
-        rooms: roomsJson.data || [], 
-        bookings: bookingsJson.data || [], 
-        users: usersJson.data || [] 
+      setData({
+        rooms: roomsRes.data?.data ?? roomsRes.data ?? [],
+        bookings: bookingsRes.data?.data ?? bookingsRes.data ?? [],
+        users: usersRes.data?.data ?? usersRes.data ?? [],
       });
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
@@ -82,6 +82,7 @@ const Dashboard = () => {
       setLoading(false);
     }
   };
+
 
   const greeting = useMemo(() => {
     const hour = currentTime.getHours();
@@ -100,7 +101,8 @@ const Dashboard = () => {
       { label: 'Total Revenue', value: formatCurrency(totalRev), icon: <DollarSign />, trend: 'up', trendValue: '+14.2%', color: 'bg-emerald-600', subtitle: 'Global revenue this month' },
       { label: 'New Bookings', value: data.bookings.length, icon: <Calendar />, trend: 'up', trendValue: '+8.4%', color: 'bg-blue-600', subtitle: `${pending} pending approval` },
       { label: 'Occupancy Rate', value: `${occRate}%`, icon: <Home />, trend: 'down', trendValue: '-2.1%', color: 'bg-violet-600', subtitle: `${occupied} rooms active` },
-      { label: 'Total Members', value: data.users.length.toLocaleString(), icon: <Users />, trend: 'up', trendValue: '+5.7%', color: 'bg-orange-600', subtitle: '+12 joined this week' },
+      { label: 'Total User', value: data.users.length.toLocaleString(), icon: <Users />, trend: 'up', trendValue: '+5.7%', color: 'bg-orange-600', subtitle: '+12 joined this week' },
+      
     ];
   }, [data]);
 

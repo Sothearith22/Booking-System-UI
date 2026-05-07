@@ -22,6 +22,24 @@ export const adminService = {
   updateUser: (id, data) => api.put(`/admin/users/${id}`, data),
   deleteUser: (id) => api.delete(`/admin/users/${id}`),
 
+  // Rooms
+  getRooms: () =>
+    api.get('/v1/rooms').then((response) => ({
+      ...response,
+      data: response.data?.data ?? response.data ?? [],
+    })),
+  addRoom: (data) => api.post('/v1/rooms', data),
+  updateRoom: (id, data) => api.put(`/v1/rooms/${id}`, data),
+  deleteRoom: (id) => api.delete(`/v1/rooms/${id}`),
+
+  // Bookings
+  getBookings: () =>
+    api.get('/v1/bookings').then((response) => ({
+      ...response,
+      data: response.data?.data ?? response.data ?? [],
+    })),
+  updateBookingStatus: (id, status) => api.put(`/v1/bookings/${id}`, { status }),
+
   // Products (Admin Resource)
   getAdminProducts: () => api.get('/admin/product'),
   createAdminProduct: (data) => api.post('/admin/product', data),
@@ -36,7 +54,7 @@ export const adminService = {
 
   // Booking Statuses
   createBookingStatus: (data) => api.post('/admin/booking-statuses', data),
-  updateBookingStatus: (id, data) => api.put(`/admin/booking-statuses/${id}`, data),
+  updateBookingStatusType: (id, data) => api.put(`/admin/booking-statuses/${id}`, data),
   deleteBookingStatus: (id) => api.delete(`/admin/booking-statuses/${id}`),
 };
 

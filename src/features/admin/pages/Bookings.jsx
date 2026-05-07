@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { adminService } from '../api/admin.service';
+import { adminService } from '../../../services/api';
 import Button from '../../../components/ui/Button';
 import Modal from '../../../components/ui/Modal';
 import {
@@ -86,11 +86,11 @@ const PAYMENT_CONFIG = {
 
 // ── Stat Card ────────────────────────────────────────────────────
 
-const StatCard = ({ icon: Icon, iconColor, label, value, subtitle, subtitleColor }) => (
+const StatCard = ({ icon, iconColor, label, value, subtitle, subtitleColor }) => (
   <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm hover:shadow-md transition-shadow">
     <div className="flex items-center gap-2 mb-3">
       <div className={`p-1.5 rounded-lg ${iconColor}`}>
-        <Icon size={16} />
+        {icon ? React.createElement(icon, { size: 16 }) : null}
       </div>
       <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{label}</p>
     </div>

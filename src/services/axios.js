@@ -1,6 +1,7 @@
 import axios from 'axios';
 import Cookies from 'js-cookie';
-import { API_BASE_URL } from '../utils/constants';
+import { COOKIE_OPTIONS, API_BASE_URL } from '../utils/constants';
+import { clearAuthCookies, extractAuthToken } from '../utils/auth';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -71,9 +72,13 @@ api.interceptors.response.use(
           headers: { Authorization: `Bearer ${Cookies.get('token')}` }
         });
 
-        const { token } = response.data;
+        const token = extractAuthToken(response.data);
+
+        if (!token) {
+          throw new Error('Refresh response did not include a token.');
+        }
         
-        Cookies.set('token', token, { expires: 7, secure: true, sameSite: 'strict' });
+        Cookies.set('token', token, COOKIE_OPTIONS);
         
         api.defaults.headers.common.Authorization = `Bearer ${token}`;
         originalRequest.headers.Authorization = `Bearer ${token}`;
@@ -84,8 +89,7 @@ api.interceptors.response.use(
         processQueue(refreshError, null);
         
         // Refresh failed, logout user
-        Cookies.remove('token');
-        Cookies.remove('user');
+        clearAuthCookies();
         
         if (window.location.pathname !== '/login') {
           window.location.href = '/login?expired=true';

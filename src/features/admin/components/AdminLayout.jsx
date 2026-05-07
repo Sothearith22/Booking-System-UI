@@ -16,7 +16,6 @@ import {
   Activity,
   Layers,
   ShieldCheck,
-  ChevronDown,
 } from 'lucide-react';
 
 const AdminLayout = () => {
