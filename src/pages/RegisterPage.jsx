@@ -1,8 +1,8 @@
 import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 
-const LoginPage = () => {
-  const [formData, setFormData] = useState({ email: '', password: '' })
+const RegisterPage = () => {
+  const [formData, setFormData] = useState({ name: '', email: '', password: '' })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
@@ -18,7 +18,7 @@ const LoginPage = () => {
     setLoading(true)
 
     try {
-      const response = await fetch('https://booking-system-team-main-pom5tl.laravel.cloud/api/login', {
+      const response = await fetch('https://booking-system-team-main-pom5tl.laravel.cloud/api/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -28,11 +28,11 @@ const LoginPage = () => {
       })
 
       const data = await response.json()
-      console.log('Login response:', data)
+      console.log('Register response:', data)
 
       if (!response.ok || data.success === false) {
         // Handle Laravel validation errors or specific error messages
-        let errorMessage = data.message || 'Login failed'
+        let errorMessage = data.message || 'Registration failed'
         if (data.error && data.error !== data.message) {
           errorMessage = `${errorMessage}: ${data.error}`
         }
@@ -43,14 +43,8 @@ const LoginPage = () => {
         throw new Error(errorMessage)
       }
 
-      // Here you would usually save the token to localStorage or context
-      if (data.token || data.access_token) {
-        localStorage.setItem('auth_token', data.token || data.access_token)
-      }
-
-      // Navigate to dashboard or home after successful login
-      navigate('/home')
-      
+      // Automatically navigate to login on success
+      navigate('/login')
     } catch (err) {
       setError(err.message)
     } finally {
@@ -61,16 +55,16 @@ const LoginPage = () => {
   return (
     <div className="sm:mx-auto sm:w-full sm:max-w-md">
       <div className="bg-white/70 backdrop-blur-md py-8 px-4 shadow-xl sm:rounded-2xl sm:px-10 border border-gray-100 relative overflow-hidden">
-        {/* Decorative background circles */}
-        <div className="absolute top-0 left-0 -ml-16 -mt-16 w-32 h-32 rounded-full bg-blue-50 opacity-50 blur-xl pointer-events-none"></div>
-        <div className="absolute bottom-0 right-0 -mr-16 -mb-16 w-32 h-32 rounded-full bg-indigo-50 opacity-50 blur-xl pointer-events-none"></div>
+        {/* Decorative background circle */}
+        <div className="absolute top-0 right-0 -mr-16 -mt-16 w-32 h-32 rounded-full bg-indigo-50 opacity-50 blur-xl pointer-events-none"></div>
+        <div className="absolute bottom-0 left-0 -ml-16 -mb-16 w-32 h-32 rounded-full bg-purple-50 opacity-50 blur-xl pointer-events-none"></div>
 
         <div className="sm:mx-auto sm:w-full sm:max-w-md mb-6 relative">
           <h2 className="text-center text-3xl font-extrabold text-gray-900 tracking-tight">
-            Welcome back
+            Create an account
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            Sign in to your account
+            Join us to start booking today
           </p>
         </div>
 
@@ -89,7 +83,25 @@ const LoginPage = () => {
           </div>
         )}
 
-        <form className="space-y-6 relative" onSubmit={handleSubmit}>
+        <form className="space-y-5 relative" onSubmit={handleSubmit}>
+          <div>
+            <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+              Full Name
+            </label>
+            <div className="mt-1">
+              <input
+                id="name"
+                name="name"
+                type="text"
+                required
+                value={formData.name}
+                onChange={handleChange}
+                className="appearance-none block w-full px-4 py-3 border border-gray-200 rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200"
+                placeholder="John Doe"
+              />
+            </div>
+          </div>
+
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-gray-700">
               Email address
@@ -110,22 +122,14 @@ const LoginPage = () => {
           </div>
 
           <div>
-            <div className="flex items-center justify-between">
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                Password
-              </label>
-              <div className="text-sm">
-                <a href="#" className="font-medium text-indigo-600 hover:text-indigo-500 transition-colors">
-                  Forgot your password?
-                </a>
-              </div>
-            </div>
+            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+              Password
+            </label>
             <div className="mt-1 relative">
               <input
                 id="password"
                 name="password"
                 type={showPassword ? "text" : "password"}
-                autoComplete="current-password"
                 required
                 value={formData.password}
                 onChange={handleChange}
@@ -151,18 +155,6 @@ const LoginPage = () => {
             </div>
           </div>
 
-          <div className="flex items-center">
-            <input
-              id="remember-me"
-              name="remember-me"
-              type="checkbox"
-              className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded cursor-pointer transition-colors"
-            />
-            <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-900 cursor-pointer">
-              Remember me
-            </label>
-          </div>
-
           <div>
             <button
               type="submit"
@@ -175,10 +167,10 @@ const LoginPage = () => {
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
-                  Signing in...
+                  Registering...
                 </span>
               ) : (
-                'Sign in'
+                'Create Account'
               )}
             </button>
           </div>
@@ -187,9 +179,9 @@ const LoginPage = () => {
         <div className="mt-6 relative">
           <div className="relative flex justify-center text-sm">
             <span className="px-2 bg-transparent text-gray-500">
-              Don't have an account?{' '}
-              <Link to="/register" className="font-medium text-indigo-600 hover:text-indigo-500 transition-colors">
-                Sign up now
+              Already have an account?{' '}
+              <Link to="/login" className="font-medium text-indigo-600 hover:text-indigo-500 transition-colors">
+                Sign in
               </Link>
             </span>
           </div>
@@ -199,4 +191,4 @@ const LoginPage = () => {
   )
 }
 
-export default Chart
+export default RegisterPage
