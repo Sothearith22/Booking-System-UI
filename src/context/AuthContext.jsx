@@ -1,6 +1,13 @@
-import React, { createContext, useState, useEffect, useCallback } from 'react';
-import Cookies from 'js-cookie';
-import { MOCK_USERS } from '../data/mock';
+import React, { createContext, useState, useEffect, useCallback } from "react";
+import Cookies from "js-cookie";
+import { authService } from "../services/api";
+import { COOKIE_OPTIONS } from "../utils/constants";
+import {
+  clearAuthCookies,
+  extractAuthToken,
+  extractAuthUser,
+  normalizeAuthUser,
+} from "../utils/auth";
 
 const AuthContext = createContext(null);
 
@@ -8,80 +15,98 @@ export const AuthProvider = ({ children }) => {
   const [authState, setAuthState] = useState({
     user: null,
     isAuthenticated: false,
-    loading: true
+    loading: true,
   });
 
-  const logout = useCallback(() => {
-    setAuthState({
-      user: null,
-      isAuthenticated: false,
-      loading: false
-    });
-    Cookies.remove('token');
-    Cookies.remove('user');
-  }, []);
-
-  useEffect(() => {
-    const checkAuth = () => {
-      const storedUser = Cookies.get('user');
-
-      if (storedUser) {
-        try {
-          const parsedUser = JSON.parse(storedUser);
-          if (parsedUser && typeof parsedUser === 'object') {
-            setAuthState({
-              user: parsedUser,
-              isAuthenticated: true,
-              loading: false
-            });
-            return;
-          }
-        } catch (error) {
-          console.error("Auth check failed:", error);
-          logout();
-        }
-      }
-      
-      setAuthState(prev => ({ ...prev, loading: false }));
+  //register
+  const register = async (userData) => {
+    const payload = {...userData,
+      name: userData.name?.trim(),
+      email: userData.email?.trim(),
+      password_confirmation:userData.password_confirmation ?? userData.password,
     };
 
-    // Simulate network delay for initial load
-    const timer = setTimeout(checkAuth, 500);
-    return () => clearTimeout(timer);
-  }, [logout]);
+    const response = await authService.register(payload);
+    return response.data;
+  };
 
+  //login
   const login = async ({ email, password }) => {
-    // Simulate network delay
-    await new Promise(resolve => setTimeout(resolve, 800));
+    const response = await authService.login({ email, password });
+    const data = response.data;
 
-    const user = MOCK_USERS.find(u => u.email === email);
+    const token = extractAuthToken(data);
 
-    if (!user) {
-      throw new Error("Invalid email or password");
+    if (!token) {
+      throw new Error("The login response did not include an access token.");
     }
 
-    // In a real mock, we'd check password, but for demo we just allow any
-    const mockToken = 'mock-jwt-token-' + Math.random().toString(36).substring(7);
-    
-    setAuthState({
-      user,
-      isAuthenticated: true,
-      loading: false
-    });
+    Cookies.set("token", token, COOKIE_OPTIONS);
 
-    Cookies.set('token', mockToken, { expires: 7, secure: true, sameSite: 'strict' });
-    Cookies.set('user', JSON.stringify(user), { expires: 7, secure: true, sameSite: 'strict' });
+    let user = extractAuthUser(data);
 
-    return { user, token: mockToken };
+    if (!user) {
+      const meResponse = await authService.me();
+      user = normalizeAuthUser(
+        extractAuthUser(meResponse.data) ??
+          meResponse.data?.user ??
+          meResponse.data,
+      );
+    }
+
+    if (!user || typeof user !== "object" || Array.isArray(user)) {
+      clearAuthCookies();
+      throw new Error("Unable to load the authenticated user.");
+    }
+
+    setAuthState({ user, isAuthenticated: true, loading: false });
+
+    return { user, token };
   };
+  //logout
+  const logout = useCallback(async () => {
+    // Attempt server-side logout (fire-and-forget)
+    try {
+      await authService.logout();
+    } catch {
+      // Ignore errors on logout – we still clear local state
+    } finally {
+      clearAuthCookies();
+      setAuthState({ user: null, isAuthenticated: false, loading: false });
+    }
+  }, []);
 
-  const register = async (userData) => {
-    // Simulate network delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Just return success for demo
-    return { status: 'success', message: 'User registered successfully' };
-  };
+  // On mount: restore session by calling /me with the stored token
+  useEffect(() => {
+    const checkAuth = async () => {
+      const token = Cookies.get("token");
+
+      if (!token) {
+        setAuthState({ user: null, isAuthenticated: false, loading: false });
+        return;
+      }
+
+      try {
+        const response = await authService.me();
+        const user = normalizeAuthUser(
+          extractAuthUser(response.data) ??
+            response.data?.user ??
+            response.data,
+        );
+        if (user && typeof user === "object") {
+          setAuthState({ user, isAuthenticated: true, loading: false });
+        } else {
+          throw new Error("Invalid user response");
+        }
+      } catch {
+        // Token is invalid/expired – clear everything
+        clearAuthCookies();
+        setAuthState({ user: null, isAuthenticated: false, loading: false });
+      }
+    };
+
+    checkAuth();
+  }, []);
 
   return (
     <AuthContext.Provider value={{ ...authState, login, logout, register }}>

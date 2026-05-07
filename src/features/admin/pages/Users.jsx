@@ -1,159 +1,188 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { adminService } from '../api/admin.service';
-import Button from '../../../components/ui/Button';
-import Modal from '../../../components/ui/Modal';
+import React, { useMemo, useState } from 'react';
 import {
+  ChevronLeft,
+  ChevronRight,
+  Filter,
   Loader2,
   Search,
-  ChevronRight,
-  ChevronLeft,
-  UserPlus,
-  Edit,
   Trash2,
+  UserPlus,
   Users,
-  UserCheck,
-  ShieldCheck,
-  Clock,
-  Filter,
 } from 'lucide-react';
 
-// ── Role badge config ────────────────────────────────────────────
+import Alert from '../../../components/ui/Alert';
+import Button from '../../../components/ui/Button';
+import DeleteConfirmationModal from '../../../components/ui/DeleteConfirmationModal';
+import Modal from '../../../components/ui/Modal';
+import { useUsers } from '../hooks/useUsers';
+
+const ROWS_PER_PAGE = 5;
+const DEFAULT_NEW_USER = {
+  name: '',
+  email: '',
+  role: 'staff',
+};
+
+const ROLE_ORDER = ['admin', 'manager', 'receptionist', 'staff', 'customer'];
+const CREATE_ROLE_ORDER = ['staff', 'receptionist', 'manager', 'admin'];
 
 const ROLE_CONFIG = {
-  manager:      { label: 'Manager',      bg: 'bg-blue-600',    text: 'text-white' },
-  receptionist: { label: 'Receptionist', bg: 'bg-blue-500',    text: 'text-white' },
-  admin:        { label: 'Admin',        bg: 'bg-gray-700',    text: 'text-white' },
-  staff:        { label: 'Staff',        bg: 'bg-amber-500',   text: 'text-white' },
-  customer:     { label: 'Customer',     bg: 'bg-emerald-500', text: 'text-white' },
+  admin: {
+    label: 'Admin',
+    bg: 'bg-rose-50',
+    text: 'text-rose-700',
+  },
+  manager: {
+    label: 'Manager',
+    bg: 'bg-violet-50',
+    text: 'text-violet-700',
+  },
+  receptionist: {
+    label: 'Receptionist',
+    bg: 'bg-sky-50',
+    text: 'text-sky-700',
+  },
+  staff: {
+    label: 'Staff',
+    bg: 'bg-emerald-50',
+    text: 'text-emerald-700',
+  },
+  customer: {
+    label: 'Customer',
+    bg: 'bg-amber-50',
+    text: 'text-amber-700',
+  },
 };
 
 const STATUS_CONFIG = {
-  active:   { label: 'Active',   dot: 'bg-emerald-500', text: 'text-emerald-600' },
-  inactive: { label: 'Inactive', dot: 'bg-gray-400',    text: 'text-gray-500' },
-  pending:  { label: 'Pending',  dot: 'bg-amber-500',   text: 'text-amber-600' },
+  active: {
+    label: 'Active',
+    dot: 'bg-emerald-500',
+    text: 'text-emerald-700',
+  },
+  inactive: {
+    label: 'Inactive',
+    dot: 'bg-gray-400',
+    text: 'text-gray-500',
+  },
+  pending: {
+    label: 'Pending',
+    dot: 'bg-amber-500',
+    text: 'text-amber-700',
+  },
 };
-
-// ── Mock enriched user list ──────────────────────────────────────
-
-const ENRICHED_USERS = [
-  { id: 1, name: 'Sarah Miller',     email: 'sarah.m@luxstay.com',      initials: 'SM', role: 'manager',      department: 'Front Desk',    status: 'active',   last_login: '2 hours ago' },
-  { id: 2, name: 'David Chen',       email: 'd.chen@luxstay.com',       initials: 'DC', role: 'receptionist', department: 'Guest Services', status: 'active',   last_login: 'Yesterday' },
-  { id: 3, name: 'James Wilson',     email: 'j.wilson@luxstay.com',     initials: 'JW', role: 'admin',        department: 'IT Security',   status: 'inactive', last_login: '12 May 2024' },
-  { id: 4, name: 'Elena Rodriguez',  email: 'e.rodriguez@luxstay.com',  initials: 'ER', role: 'receptionist', department: 'Reservations',  status: 'active',   last_login: 'Just now' },
-  { id: 5, name: 'Kevin Brown',      email: 'k.brown@luxstay.com',      initials: 'KB', role: 'staff',        department: 'Maintenance',   status: 'pending',  last_login: 'Never' },
-  { id: 6, name: 'Linda Park',       email: 'l.park@luxstay.com',       initials: 'LP', role: 'manager',      department: 'Housekeeping',  status: 'active',   last_login: '3 hours ago' },
-  { id: 7, name: 'Tom Harris',       email: 't.harris@luxstay.com',     initials: 'TH', role: 'staff',        department: 'F&B',           status: 'active',   last_login: '1 day ago' },
-  { id: 8, name: 'Amy Foster',       email: 'a.foster@luxstay.com',     initials: 'AF', role: 'receptionist', department: 'Front Desk',    status: 'active',   last_login: '4 hours ago' },
-];
-
-// ── Stat Card ────────────────────────────────────────────────────
 
 const StatCard = ({ label, value, subtitle, subtitleColor }) => (
   <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm hover:shadow-md transition-shadow">
     <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">{label}</p>
-    <div className="flex items-end justify-between">
+    <div className="flex items-end justify-between gap-3">
       <h3 className="text-3xl font-extrabold text-gray-900 tracking-tight">{value}</h3>
-      {subtitle && (
-        <span className={`text-xs font-semibold ${subtitleColor || 'text-gray-400'}`}>{subtitle}</span>
-      )}
+      {subtitle ? (
+        <span className={`text-xs font-semibold text-right ${subtitleColor || 'text-gray-400'}`}>{subtitle}</span>
+      ) : null}
     </div>
   </div>
 );
 
-// ── Main Page ────────────────────────────────────────────────────
-
-const ROWS_PER_PAGE = 5;
-
-import DeleteConfirmationModal from '../../../components/ui/DeleteConfirmationModal';
-
 const UsersPage = () => {
-  const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [roleFilter, setRoleFilter] = useState('all');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [currentPage, setCurrentPage] = useState(1);
+  const {
+    loading,
+    error,
+    searchTerm,
+    setSearchTerm,
+    roleFilter,
+    setRoleFilter,
+    statusFilter,
+    setStatusFilter,
+    currentPage,
+    setCurrentPage,
+    stats,
+    filteredUsers,
+    createUser,
+    deleteUser,
+  } = useUsers();
+
+  const [successMessage, setSuccessMessage] = useState(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [userToDelete, setUserToDelete] = useState(null);
-  const [newUser, setNewUser] = useState({ name: '', email: '', role: 'staff', department: '' });
+  const [newUser, setNewUser] = useState(DEFAULT_NEW_USER);
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setUsers(ENRICHED_USERS);
-      setLoading(false);
-    }, 500);
-    return () => clearTimeout(timer);
-  }, []);
-
-  // Stats
-  const stats = useMemo(() => {
-    const total = users.length;
-    const active = users.filter(u => u.status === 'active').length;
-    const admins = users.filter(u => u.role === 'admin' || u.role === 'manager').length;
-    const pending = users.filter(u => u.status === 'pending').length;
-    return { total, active, admins, pending };
-  }, [users]);
-
-  // Filter + search
-  const filteredUsers = useMemo(() => {
-    let list = [...users];
-    if (searchTerm) {
-      const q = searchTerm.toLowerCase();
-      list = list.filter(u =>
-        u.name.toLowerCase().includes(q) ||
-        u.email.toLowerCase().includes(q) ||
-        u.department.toLowerCase().includes(q)
-      );
-    }
-    if (roleFilter !== 'all') list = list.filter(u => u.role === roleFilter);
-    if (statusFilter !== 'all') list = list.filter(u => u.status === statusFilter);
-    return list;
-  }, [users, searchTerm, roleFilter, statusFilter]);
-
-  // Pagination
   const totalPages = Math.max(1, Math.ceil(filteredUsers.length / ROWS_PER_PAGE));
-  const pagedUsers = filteredUsers.slice((currentPage - 1) * ROWS_PER_PAGE, currentPage * ROWS_PER_PAGE);
+  const activePage = Math.min(currentPage, totalPages);
+  const pagedUsers = useMemo(
+    () => filteredUsers.slice((activePage - 1) * ROWS_PER_PAGE, activePage * ROWS_PER_PAGE),
+    [activePage, filteredUsers]
+  );
 
-  useEffect(() => { setCurrentPage(1); }, [searchTerm, roleFilter, statusFilter]);
+  const closeAddModal = () => {
+    setIsAddModalOpen(false);
+    setNewUser(DEFAULT_NEW_USER);
+  };
 
-  const handleDeleteConfirm = () => {
-    if (userToDelete) {
-      setUsers(prev => prev.filter(u => u.id !== userToDelete.id));
-      setUserToDelete(null);
+  const resetFilters = () => {
+    setSearchTerm('');
+    setRoleFilter('all');
+    setStatusFilter('all');
+    setCurrentPage(1);
+  };
+
+  const handleAddUser = async (event) => {
+    event.preventDefault();
+    setIsSubmitting(true);
+    setSuccessMessage(null);
+
+    try {
+      await createUser({
+        name: newUser.name.trim(),
+        email: newUser.email.trim(),
+        role: newUser.role,
+        status: 'pending',
+      });
+
+      setSuccessMessage('User created successfully.');
+      closeAddModal();
+      setCurrentPage(1);
+    } catch (submitError) {
+      console.error(submitError);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  const handleAddUser = (e) => {
-    e.preventDefault();
-    const initials = newUser.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
-    setUsers(prev => [...prev, {
-      id: Date.now(),
-      ...newUser,
-      initials,
-      status: 'pending',
-      last_login: 'Never',
-    }]);
-    setNewUser({ name: '', email: '', role: 'staff', department: '' });
-    setIsAddModalOpen(false);
+  const handleDeleteConfirm = async () => {
+    if (!userToDelete) {
+      return;
+    }
+
+    setIsSubmitting(true);
+    setSuccessMessage(null);
+
+    try {
+      await deleteUser(userToDelete);
+      setSuccessMessage('User removed successfully.');
+      setUserToDelete(null);
+      setCurrentPage((page) => Math.max(1, Math.min(page, totalPages)));
+    } catch (deleteError) {
+      console.error(deleteError);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  if (loading) return (
-    <div className="flex flex-col items-center justify-center min-h-[400px]">
-      <Loader2 className="animate-spin text-blue-600 mb-4" size={48} />
-      <p className="text-gray-500 font-medium">Loading users…</p>
-    </div>
-  );
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px]">
+        <Loader2 className="animate-spin text-blue-600 mb-4" size={48} />
+        <p className="text-gray-500 font-medium">Loading users…</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">
-            <span>Admin</span>
-            <ChevronRight size={12} />
-            <span className="text-gray-900">Users</span>
-          </div>
           <h1 className="text-2xl font-extrabold text-gray-900 tracking-tight">User Management</h1>
           <p className="text-sm text-gray-500 mt-0.5">Create, edit and manage staff accounts and permissions.</p>
         </div>
@@ -162,41 +191,74 @@ const UsersPage = () => {
         </Button>
       </div>
 
-      {/* Filter Bar */}
+      {error ? (
+        <Alert type="error">
+          {error}
+        </Alert>
+      ) : null}
+
+      {successMessage ? (
+        <Alert type="success" onClose={() => setSuccessMessage(null)}>
+          {successMessage}
+        </Alert>
+      ) : null}
+
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
         <div className="relative w-full lg:w-80">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
           <input
             type="text"
-            placeholder="Search by name, email or department…"
+            placeholder="Search by name, email, role or department…"
             className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(event) => {
+              setSearchTerm(event.target.value);
+              setCurrentPage(1);
+            }}
           />
         </div>
+
         <div className="flex flex-wrap items-center gap-3">
-          <select value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)}
-            className="bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-xs font-bold text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500">
+          <select
+            value={roleFilter}
+            onChange={(event) => {
+              setRoleFilter(event.target.value);
+              setCurrentPage(1);
+            }}
+            className="bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-xs font-bold text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+          >
             <option value="all">All Roles</option>
-            <option value="admin">Admin</option>
-            <option value="manager">Manager</option>
-            <option value="receptionist">Receptionist</option>
-            <option value="staff">Staff</option>
+            {ROLE_ORDER.map((role) => (
+              <option key={role} value={role}>
+                {ROLE_CONFIG[role].label}
+              </option>
+            ))}
           </select>
-          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}
-            className="bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-xs font-bold text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500">
+
+          <select
+            value={statusFilter}
+            onChange={(event) => {
+              setStatusFilter(event.target.value);
+              setCurrentPage(1);
+            }}
+            className="bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-xs font-bold text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+          >
             <option value="all">All Status</option>
             <option value="active">Active</option>
             <option value="inactive">Inactive</option>
             <option value="pending">Pending</option>
           </select>
-          <button className="flex items-center gap-1.5 px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-700 hover:bg-gray-100 transition-colors">
-            <Filter size={14} /> More Filters
+
+          <button
+            type="button"
+            className="flex items-center gap-1.5 px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-700 hover:bg-gray-100 transition-colors"
+            onClick={resetFilters}
+          >
+            <Filter size={14} /> Reset Filters
           </button>
         </div>
       </div>
 
-      {/* Table */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -210,6 +272,7 @@ const UsersPage = () => {
                 <th className="px-6 py-4 text-right text-[10px] font-bold text-gray-400 uppercase tracking-widest">Actions</th>
               </tr>
             </thead>
+
             <tbody className="divide-y divide-gray-50">
               {pagedUsers.length === 0 ? (
                 <tr>
@@ -220,12 +283,12 @@ const UsersPage = () => {
                   </td>
                 </tr>
               ) : (
-                pagedUsers.map(user => {
-                  const rc = ROLE_CONFIG[user.role] || ROLE_CONFIG.staff;
-                  const sc = STATUS_CONFIG[user.status] || STATUS_CONFIG.active;
+                pagedUsers.map((user) => {
+                  const roleConfig = ROLE_CONFIG[user.role] || ROLE_CONFIG.staff;
+                  const statusConfig = STATUS_CONFIG[user.status] || STATUS_CONFIG.active;
+
                   return (
                     <tr key={user.id} className="group hover:bg-blue-50/30 transition-colors">
-                      {/* User */}
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center gap-3">
                           <div className="w-9 h-9 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold shrink-0">
@@ -238,41 +301,34 @@ const UsersPage = () => {
                         </div>
                       </td>
 
-                      {/* Role */}
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-block px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${rc.bg} ${rc.text}`}>
-                          {rc.label}
+                        <span className={`inline-block px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${roleConfig.bg} ${roleConfig.text}`}>
+                          {roleConfig.label}
                         </span>
                       </td>
 
-                      {/* Department */}
-                      <td className="px-6 py-4 whitespace-nowrap text-gray-700 font-medium">
-                        {user.department}
-                      </td>
+                    
 
-                      {/* Status */}
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex items-center gap-1.5 text-xs font-semibold ${sc.text}`}>
-                          <span className={`w-2 h-2 rounded-full ${sc.dot}`} />
-                          {sc.label}
+                        <span className={`inline-flex items-center gap-1.5 text-xs font-semibold ${statusConfig.text}`}>
+                          <span className={`w-2 h-2 rounded-full ${statusConfig.dot}`} />
+                          {statusConfig.label}
                         </span>
                       </td>
 
-                      {/* Last Login */}
                       <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-500 italic">
                         {user.last_login}
                       </td>
 
-                      {/* Actions */}
                       <td className="px-6 py-4 whitespace-nowrap text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          <button className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all" title="Edit">
-                            <Edit size={16} />
-                          </button>
-                          <button onClick={() => setUserToDelete(user)} className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all" title="Delete">
-                            <Trash2 size={16} />
-                          </button>
-                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setUserToDelete(user)}
+                          className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                          title="Delete"
+                        >
+                          <Trash2 size={16} />
+                        </button>
                       </td>
                     </tr>
                   );
@@ -282,24 +338,46 @@ const UsersPage = () => {
           </table>
         </div>
 
-        {/* Pagination */}
-        {filteredUsers.length > ROWS_PER_PAGE && (
+        {filteredUsers.length > ROWS_PER_PAGE ? (
           <div className="flex items-center justify-between px-6 py-4 border-t border-gray-100">
             <p className="text-xs text-gray-500">
-              Showing <span className="font-bold text-gray-900">{(currentPage - 1) * ROWS_PER_PAGE + 1} to {Math.min(currentPage * ROWS_PER_PAGE, filteredUsers.length)}</span> of <span className="font-bold text-gray-900">{filteredUsers.length}</span> users
+              Showing <span className="font-bold text-gray-900">{(activePage - 1) * ROWS_PER_PAGE + 1} to {Math.min(activePage * ROWS_PER_PAGE, filteredUsers.length)}</span> of <span className="font-bold text-gray-900">{filteredUsers.length}</span> users
             </p>
+
             <div className="flex items-center gap-1">
-              <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="p-2 rounded-lg text-gray-400 hover:text-gray-900 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-all"><ChevronLeft size={16} /></button>
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                <button key={page} onClick={() => setCurrentPage(page)} className={`w-8 h-8 rounded-lg text-xs font-bold transition-all ${page === currentPage ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20' : 'text-gray-600 hover:bg-gray-100'}`}>{page}</button>
+              <button
+                type="button"
+                onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+                disabled={activePage === 1}
+                className="p-2 rounded-lg text-gray-400 hover:text-gray-900 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+              >
+                <ChevronLeft size={16} />
+              </button>
+
+              {Array.from({ length: totalPages }, (_, index) => index + 1).map((page) => (
+                <button
+                  key={page}
+                  type="button"
+                  onClick={() => setCurrentPage(page)}
+                  className={`w-8 h-8 rounded-lg text-xs font-bold transition-all ${page === activePage ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20' : 'text-gray-600 hover:bg-gray-100'}`}
+                >
+                  {page}
+                </button>
               ))}
-              <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="p-2 rounded-lg text-gray-400 hover:text-gray-900 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-all"><ChevronRight size={16} /></button>
+
+              <button
+                type="button"
+                onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+                disabled={activePage === totalPages}
+                className="p-2 rounded-lg text-gray-400 hover:text-gray-900 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+              >
+                <ChevronRight size={16} />
+              </button>
             </div>
           </div>
-        )}
+        ) : null}
       </div>
 
-      {/* Stats Cards (below table like screenshot) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard label="Total Users" value={stats.total} subtitle="+2 this month" subtitleColor="text-emerald-600" />
         <StatCard label="Active Now" value={stats.active} />
@@ -307,39 +385,55 @@ const UsersPage = () => {
         <StatCard label="Pending Invites" value={stats.pending} subtitle={stats.pending > 0 ? 'Expiring soon' : ''} subtitleColor="text-amber-600" />
       </div>
 
-      {/* Add User Modal */}
-      <Modal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} title="Add New User">
+      <Modal isOpen={isAddModalOpen} onClose={closeAddModal} title="Add New User">
         <form onSubmit={handleAddUser} className="space-y-4">
           <div>
             <label className="block text-xs font-bold text-gray-600 mb-1">Full Name</label>
-            <input required value={newUser.name} onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
-              className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" placeholder="e.g. Sarah Miller" />
+            <input
+              required
+              value={newUser.name}
+              onChange={(event) => setNewUser((previous) => ({ ...previous, name: event.target.value }))}
+              className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+              placeholder="e.g. Sarah Miller"
+            />
           </div>
+
           <div>
             <label className="block text-xs font-bold text-gray-600 mb-1">Email</label>
-            <input required type="email" value={newUser.email} onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
-              className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" placeholder="e.g. sarah@luxstay.com" />
+            <input
+              required
+              type="email"
+              value={newUser.email}
+              onChange={(event) => setNewUser((previous) => ({ ...previous, email: event.target.value }))}
+              className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+              placeholder="e.g. sarah@luxstay.com"
+            />
           </div>
+
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-bold text-gray-600 mb-1">Role</label>
-              <select value={newUser.role} onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
-                className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500">
-                <option value="staff">Staff</option>
-                <option value="receptionist">Receptionist</option>
-                <option value="manager">Manager</option>
-                <option value="admin">Admin</option>
+              <select
+                value={newUser.role}
+                onChange={(event) => setNewUser((previous) => ({ ...previous, role: event.target.value }))}
+                className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+              >
+                {CREATE_ROLE_ORDER.map((role) => (
+                  <option key={role} value={role}>
+                    {ROLE_CONFIG[role].label}
+                  </option>
+                ))}
               </select>
             </div>
-            <div>
-              <label className="block text-xs font-bold text-gray-600 mb-1">Department</label>
-              <input required value={newUser.department} onChange={(e) => setNewUser({ ...newUser, department: e.target.value })}
-                className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" placeholder="e.g. Front Desk" />
-            </div>
           </div>
+
           <div className="flex gap-2 pt-2">
-            <Button type="submit" className="flex-1 flex items-center justify-center gap-2"><UserPlus size={16} /> Create User</Button>
-            <Button type="button" variant="ghost" className="flex-1" onClick={() => setIsAddModalOpen(false)}>Cancel</Button>
+            <Button type="submit" className="flex-1 flex items-center justify-center gap-2" disabled={isSubmitting}>
+              <UserPlus size={16} /> {isSubmitting ? 'Creating...' : 'Create User'}
+            </Button>
+            <Button type="button" variant="ghost" className="flex-1" onClick={closeAddModal} disabled={isSubmitting}>
+              Cancel
+            </Button>
           </div>
         </form>
       </Modal>

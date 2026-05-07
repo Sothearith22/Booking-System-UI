@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '../../../hooks/useAuth';
-import Alert from '../../../components/ui/Alert';
-import Button from '../../../components/ui/Button';
+import { useAuth } from '../../../../hooks/useAuth';
+import Alert from '../../../../components/ui/Alert';
+import Button from '../../../../components/ui/Button';
+import { getApiErrorMessage } from '../../../../utils/auth';
 
 const RegisterPage = () => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
-    password: ''
+    password: '',
   });
   const [error, setError] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -18,7 +19,7 @@ const RegisterPage = () => {
   const handleChange = (e) => {
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [e.target.name]: e.target.value,
     });
   };
 
@@ -28,19 +29,18 @@ const RegisterPage = () => {
     setIsSubmitting(true);
 
     try {
-      await register(formData);
-      // Registration successful, redirect to login
+      await register({
+        name: formData.name.trim(),
+        email: formData.email.trim(),
+        password: formData.password,
+      });
+
       navigate('/login', { 
-        state: { message: 'Registration successful! Please login with your new account.' } 
+        state: { message: 'Registration successful! Please login with your new account.' },
+        replace: true,
       });
     } catch (err) {
-      console.error("Registration failed:", err);
-      if (err.response?.data?.errors) {
-        const firstError = Object.values(err.response.data.errors)[0][0];
-        setError(firstError);
-      } else {
-        setError(err.response?.data?.message || 'Registration failed. Please check your details.');
-      }
+      setError(getApiErrorMessage(err, 'Registration is temporarily unavailable. Please try again later.'));
     } finally {
       setIsSubmitting(false);
     }
@@ -94,6 +94,7 @@ const RegisterPage = () => {
             type="password" 
             name="password"
             required
+            minLength={6}
             autoComplete="new-password"
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:outline-none transition-all" 
             placeholder="••••••••"

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { useAuth } from '../../../hooks/useAuth';
-import Alert from '../../../components/ui/Alert';
+import { useAuth } from '../../../../hooks/useAuth';
+import Alert from '../../../../components/ui/Alert';
+import { getApiErrorMessage, getHomePathForRole } from '../../../../utils/auth';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -23,25 +24,24 @@ const LoginPage = () => {
   const handleLogin = async (e) => {
     e.preventDefault();
     setError(null);
+    setSuccessMessage(null);
     setIsSubmitting(true);
     
     const trimmedEmail = email.trim();
-    console.log("Attempting login with email:", trimmedEmail);
 
     try {
       const userData = await login({ email: trimmedEmail, password });
-      
-      // Determine role-based redirection from the response
-      const role = userData.user?.role || 'customer';
-      
-      if (role == 'admin' ) {
-        navigate('/admin/dashboard');
-      } else {
-        navigate('/customer');
-      }
+
+      const requestedPath = location.state?.from?.pathname;
+      const fallbackPath = getHomePathForRole(userData.user?.role);
+      const redirectPath =
+        requestedPath && !['/login', '/register'].includes(requestedPath)
+          ? requestedPath
+          : fallbackPath;
+
+      navigate(redirectPath, { replace: true });
     } catch (err) {
-      console.error("Login failed:", err);
-      setError(err.message || 'Login failed. Please check your credentials.');
+      setError(getApiErrorMessage(err, 'Login failed. Please check your credentials.'));
     } finally {
       setIsSubmitting(false);
     }
@@ -69,6 +69,7 @@ const LoginPage = () => {
           <input 
             type="email" 
             required
+            autoComplete="email"
             className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none" 
             placeholder="name@company.com"
             value={email}
@@ -80,6 +81,7 @@ const LoginPage = () => {
           <input 
             type="password" 
             required
+            autoComplete="current-password"
             className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none" 
             placeholder="••••••••"
             value={password}

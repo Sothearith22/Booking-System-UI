@@ -3,7 +3,14 @@ import { AlertTriangle, Trash2, X } from 'lucide-react';
 import Button from './Button';
 import Modal from './Modal';
 
-const DeleteConfirmationModal = ({ isOpen, onClose, onConfirm, title = "Confirm Deletion", message = "Are you sure you want to delete this item? This action cannot be undone.", itemName }) => {
+const DeleteConfirmationModal = (
+  { 
+    isOpen, 
+    onClose, 
+    onConfirm, 
+    title = "Confirm Deletion", 
+    message = "Are you sure you want to delete this item? This action cannot be undone.", 
+    itemName }) => {
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={""}>
       <div className="flex flex-col items-center text-center p-2">

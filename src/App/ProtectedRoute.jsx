@@ -2,6 +2,7 @@ import React from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks';
 import PageLoader from '../components/ui/PageLoader';
+import { extractRoleName } from '../utils/auth';
 
 /**
  * ProtectedRoute component handles access control for routes.
@@ -26,8 +27,10 @@ const ProtectedRoute = ({ allowedRoles }) => {
     return <PageLoader />;
   }
 
-  if (allowedRoles && !allowedRoles.includes(user.role)) {
-    // Redirect to a dedicated Unauthorized page instead of silently redirecting to home
+  const roleName = extractRoleName(user);
+
+  if (allowedRoles && !allowedRoles.some((role) => role.toLowerCase() === roleName)) {
+    console.warn(`Access denied for role: ${roleName ?? 'unknown'}. Allowed roles: ${allowedRoles.join(', ')}`);
     return <Navigate to="/unauthorized" replace />;
   }
 

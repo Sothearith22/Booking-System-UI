@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { adminService } from '../api/admin.service';
+import { adminService } from '../../../services/api';
 import Button from '../../../components/ui/Button';
 import Modal from '../../../components/ui/Modal';
 import {
@@ -20,8 +20,6 @@ import {
 
 // ── Helpers ────────────────────────────────────────────────────────
 
-const formatCurrency = (val) =>
-  new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(val);
 
 const STATUS_CONFIG = {
   available: {
@@ -63,7 +61,7 @@ const ROOM_TYPE_MAP = {
 
 // ── Stat Card ────────────────────────────────────────────────────
 
-const StatCard = ({ icon: Icon, iconColor, label, value, subtitle, subtitleColor }) => (
+const StatCard = ({ label, value, subtitle, subtitleColor }) => (
   <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm hover:shadow-md transition-shadow">
     <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">{label}</p>
     <div className="flex items-end justify-between">

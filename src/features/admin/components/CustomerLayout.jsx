@@ -2,13 +2,8 @@ import React from 'react';
 import { Link, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../../hooks/useAuth';
 import { 
-  Star, 
   Bell, 
-  User, 
   LogOut,
-  Mail,
-  Search,
-  ChevronDown
 } from 'lucide-react';
 import { cn } from '../../../utils/cn';
 
@@ -27,7 +22,7 @@ const CustomerLayout = () => {
     { name: 'Rooms', path: '/customer/rooms' },
     { name: 'Explore', path: '/customer/explore' },
     { name: 'My Bookings', path: '/customer/bookings' },
-    { name: 'Product Service', path: '/customer/product-service' },
+    // { name: 'Product Service', path: '/customer/product-service' },
     { name: 'Support', path: '/customer/support' },
   ];
 
@@ -97,7 +92,7 @@ const CustomerLayout = () => {
         </div>
       </nav>
 
-      {/* Main Content - No max-w-7xl here to allow full-width heroes */}
+      {/* Main Content */}
       <main className="flex-1">
         <Outlet />
       </main>
@@ -141,7 +136,7 @@ const CustomerLayout = () => {
               <h4 className="text-white font-black mb-8 uppercase text-xs tracking-[4px]">Quick Links</h4>
               <ul className="space-y-4 text-sm font-bold">
                 <li><Link to="/customer/rooms" className="hover:text-blue-400 transition-colors">Browse Rooms</Link></li>
-                <li><Link to="/customer/my-bookings" className="hover:text-blue-400 transition-colors">Manage Bookings</Link></li>
+                <li><Link to="/customer/bookings" className="hover:text-blue-400 transition-colors">Manage Bookings</Link></li>
                 <li><Link to="/customer/product-service" className="hover:text-blue-400 transition-colors">Product Services</Link></li>
                 <li><Link to="/customer/support" className="hover:text-blue-400 transition-colors">24/7 Support</Link></li>
               </ul>
